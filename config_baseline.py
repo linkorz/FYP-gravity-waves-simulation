@@ -36,7 +36,7 @@ if IsTopSpongeLayer == 1:
 Xdomain = Xmax-Xmin;
 Zdomain = Zmax-Zmin;
 # Define positions at cell centers
-x_c = np.arange(Xmin-3*dx/2,Xmax+3*dx/+1,dx);   #2 centre points outside on either boundary. x_c = Xmin-3*dx/2:dx:Xmax+3*dx/2. Translation may need correction
+x_c = np.arange(Xmin-3*dx/2,Xmax+3*dx/2+1,dx);   #2 centre points outside on either boundary. x_c = Xmin-3*dx/2:dx:Xmax+3*dx/2. Translation may need correction
 z_c = np.arange(Zmin-3*dz/2,Zmax+3*dz/2+1,dz);   #z_c = Zmin-3*dz/2:dz:Zmax+3*dz/2. Translation may need correction
 [X,Z] = np.meshgrid(x_c,z_c);    # grid of cell centers
 [J,I] = np.shape(X);  #J gives no of z levels and I gives no of x levels
