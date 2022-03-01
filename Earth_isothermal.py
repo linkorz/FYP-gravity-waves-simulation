@@ -15,15 +15,15 @@ def Earth_isothermal(z_array):
     R = 287;
     Pr = 0.7;
 
-    H_2D = np.zeros((X,Z))
-    p_2D = np.zeros((X,Z))
-    rho_2D = np.zeros((X,Z))
-    T_2D = np.zeros((X,Z))
-    R_2D = np.zeros((X,Z))
-    C_2D = np.zeros((X,Z))
-    gamma_2D = np.zeros((X,Z))
-    kvisc_2D = np.zeros((X,Z))
-    thermdiffus_2D = np.zeros((X,Z))
+    H_2D = np.zeros((Z,X))
+    p_2D = np.zeros((Z,X))
+    rho_2D = np.zeros((Z,X))
+    T_2D = np.zeros((Z,X))
+    R_2D = np.zeros((Z,X))
+    C_2D = np.zeros((Z,X))
+    gamma_2D = np.zeros((Z,X))
+    kvisc_2D = np.zeros((Z,X))
+    thermdiffus_2D = np.zeros((Z,X))
 
     H = p_surface/(rho_surface*9.8); # scaled height
 
