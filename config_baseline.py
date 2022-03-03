@@ -55,7 +55,7 @@ C = None
 #global g, R, P0, rho0, gamma, C; 
 
 # If using Earth isothermal model
-from Earth_isothermal import Earth_isothermal
+from Earth_iso import Earth_isothermal
 (T0,rho0,P0,R,gamma,kinvisc,thermdiffus,H,C) = Earth_isothermal(Z);
  
 # If using Earth MSIS model
@@ -70,7 +70,7 @@ global wind
 u_max = 0;    # wind amplitude (m/s) 
 u_zloc = 100000;    # z location of wind peak (m)
 u_sig = 10000;    # stdev of wind profile (m)
-wind = u_max*math.exp(-(Z-u_zloc)**2/(2*u_sig**2));    # wind profile, also a matrix of size X=Z. 
+wind = u_max*np.exp(-(Z-u_zloc)**2/(2*u_sig**2));    # wind profile, also a matrix of size X=Z. 
 
 # linear wind shear
 # wind = linspace(0,u_max,length(z_c));

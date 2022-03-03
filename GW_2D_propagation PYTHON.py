@@ -1,9 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-#from numpy.compat.py3k import npy_load_module
-#from numpy.core.fromnumeric import shape
-#import scipy
-import math
+
 
 
 # import appropriate simulation configuration file(s)
