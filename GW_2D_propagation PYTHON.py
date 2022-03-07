@@ -11,10 +11,10 @@ from VarCoeffImplicitCNMatrix import VarCoeffImplicitCNMatrix
 # note on indexing: X(row,col) --> X(z_ind, x_ind)
 
 # managing z axis indices
-LastDomainZindex = np.nonzero(z_c > ZDomainEnd and z_c < ZDomainEnd+dz)-1;         # last Z index for the 'physically valid' domain
-FirstSpongeZindex = LastDomainZindex + 1;
+LastDomainZindex = np.nonzero(np.logical_and(z_c > ZDomainEnd,z_c < ZDomainEnd+dz)) - np.array([1]);         # last Z index for the 'physically valid' domain
+FirstSpongeZindex = LastDomainZindex + np.array([1]);
 if IsTopSpongeLayer == 0:  # if no sponge layer is implemented, just take last 2 indices out for top BCs
-    LastDomainZindex = LastDomainZindex - 2;
+    LastDomainZindex = LastDomainZindex - np.array([2]);
 
 
 # setting viscosity coefficient constant in sponge layer to prevent diffusion timestep being too low
@@ -28,7 +28,7 @@ g = (P0[1:,0]-P0[0:-1,0])/(-0.5*dz*(rho0[1:,0]+rho0[0:-1,0]));
 g = np.tile(g,(1,np.size(X, axis=1)-1));                                           
 
 # ---- initial timestep calculation
-dt = dCFL*min(dx,dz)/max(max(C));   #limited by speed of sound          
+dt = dCFL*np.minimum(dx,dz)/np.amax(C);   #limited by speed of sound          
 
 # generate coefficient matrix for implicit diffusion                                     
 if IsDiffusionImplicit:
@@ -43,7 +43,7 @@ else:
 # Initializing arrays:
     #our PDE system is: dQ/dt + dF/dx + dG/dz = S 
     #all these are zero arrays of size X in 4D 
-F = np.concatenate((0*X,0*X,0*X,0*X),axis=3);   #Fluxes for x-split(concantenate along 3rd dim to yield 4D array)    not very sure
+F = np.dstack([0*X,0*X,0*X,0*X]);   #Fluxes for x-split(concantenate along 3rd dim to yield 3D array)    not very sure
 G = F;                            #Fluxes for y-split
 Q = F;                            #Solution Variables (rho, rho*u, rho*w, E)
 S = F;                            #Source Terms
@@ -90,7 +90,7 @@ def bc(Q,t):
     if (forcing.verticalvelocity==False):   # i.e. if no vertical velocity forcing, use reflective BC for rho*w at domain bottom
         Q[0:2,:,2] = -Q[2,:,2]*(rho0[0:2,:]/rho0[2,:])**(0.5); 
     else: # enforce vertical velocity forcing
-        w = forcing.amp*math.cos(forcing.omega*(t-forcing.t0)-forcing.kxx)*math.exp(-(t-forcing.t0)**2/(2*forcing.sigmat**2)); 
+        w = forcing.amp*np.cos(forcing.omega*(t-forcing.t0)-forcing.kxx)*np.exp(-(t-forcing.t0)**2/(2*forcing.sigmat**2)); 
         #w = Tsunami_forcing(t); 
         Q[0:2,:,2] = w*rho0[0:2,:];
     
@@ -164,7 +164,7 @@ def Source(Q,g,X,Z,t):
         S[:,:,3] = -Q[:,:,2]*g;   # no thermal forcing (just -rho*g*w)
     else:
         a,b,_ = np.shape(Q);
-        S[:,:,3] = -Q[:,:,2]*g + Q[:,:,0]*forcing.amp*math.exp(-((X[0:a,0:b]-forcing.x0)**2)/(2*forcing.sigmax**2))*math.exp(-((Z[0:a,0:b]-forcing.z0)**2)/(2*forcing.sigmaz**2))*math.exp(-((t-forcing.t0)**2)/(2*forcing.sigmat**2)); #matirx power 
+        S[:,:,3] = -Q[:,:,2]*g + Q[:,:,0]*forcing.amp*np.exp(-((X[0:a,0:b]-forcing.x0)**2)/(2*forcing.sigmax**2))*np.exp(-((Z[0:a,0:b]-forcing.z0)**2)/(2*forcing.sigmaz**2))*np.exp(-((t-forcing.t0)**2)/(2*forcing.sigmat**2)); #matirx power 
 
     return S
 ## ---- Viscous terms ----
@@ -201,8 +201,8 @@ def MolecularViscosity(kinvisc,difCFL,dt,dx,dz,jD,iD,Q,t,IsDiffusionImplicit,A_v
         
     else:
         # First calculating the number of sub-steps for integration of diffusion equation 
-        max_visc = max(max(kinvisc));  #max value of viscosity in the domain
-        N_substeps = math.ceil(dt*max_visc/(difCFL*min(dx,dz)**2));   #no of substeps required to solve diffusion equation... 
+        max_visc = np.amax(kinvisc);  #max value of viscosity in the domain
+        N_substeps = np.ceil(dt*max_visc/(difCFL*min(dx,dz)**2));   #no of substeps required to solve diffusion equation... 
         #... based on Von Neumann Number (dt = N_substeps x dt_sub)
 
         # Main Substepping Loop
@@ -263,8 +263,8 @@ def ThermalConduction(thermdiffus,difCFL,T_ref,dt,dx,dz,x_c,z_c,jD,iD,Q,t,IsDiff
         Q = bc(Q,t);
     else:
         # First calculating the number of sub-steps for integration of diffusion equation 
-        max_diffusivity = max(max(thermdiffus));  #max value of viscosity in the domain
-        N_substeps = math.ceil(dt*max_diffusivity/(difCFL*min(dx,dz)**2));   #no of substeps required to solve diffusion equation.
+        max_diffusivity = np.amax(thermdiffus);  #max value of viscosity in the domain
+        N_substeps = np.ceil(dt*max_diffusivity/(difCFL*min(dx,dz)**2));   #no of substeps required to solve diffusion equation.
         #... based on Von Neumann Number (dt = N_substeps x dt_sub)
 
     # Main Substepping Loop
@@ -370,7 +370,7 @@ while t < Tmax and nframe <= 166:       #last index of T_arr is 166
     dt = dCFL*min(dx,dz)/(max(max(C))+max(max(max(abs(Q[:,:,1:3]/Q[:,:,0]))))); # when Q(:,:,1) -> 0, dt becomes 0 & program breaks.
     #This happens with ideal exponential density (hence, limit them to ~300
     #km). Should not be an issue with realistic density.
-    if ((math.isnan(dt)) or (dt==0)):
+    if ((np.isnan(dt)) or (dt==0)):
         break;
     
     
@@ -395,7 +395,7 @@ T_PERT = P_PERT/(R[2:LastDomainZindex,2:-2]*np.squeeze(Q_save[2:LastDomainZindex
 U = np.squeeze(Q_save[2:LastDomainZindex,2:-2,1,:]/Q_save[2:LastDomainZindex,2:-2,0,:]);    #horiz. wind (not perturbation)
 W = np.squeeze(Q_save[2:LastDomainZindex,2:-2,2,:]/Q_save[2:LastDomainZindex,2:-2,0,:]);    # vertical wind (not perturbation) stopped here
 
-SCALING_FACTOR = math.sqrt(rho0[3:LastDomainZindex,3:-2]/rho0[3,3:-2]); # an 2d Z-X matrix
+SCALING_FACTOR = np.sqrt(rho0[3:LastDomainZindex,3:-2]/rho0[3,3:-2]); # an 2d Z-X matrix
 Z_KM = z_c[2:LastDomainZindex]/1000; # grid center arrays for plotting the computational domain
 X_KM = x_c[2:-2]/1000;
 
