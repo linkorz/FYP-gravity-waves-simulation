@@ -25,7 +25,7 @@ if IsTopSpongeLayer == 1:
 
 # model gravity to maintain hydrostatic equilibrium initially (g dimension is Z-1 x X-1)
 g = (P0[1:,0]-P0[0:-1,0])/(-0.5*dz*(rho0[1:,0]+rho0[0:-1,0]));
-g = np.tile(g,(1,np.size(X, axis=1)-1));                                           
+g=np.transpose(np.tile(g,(np.size(X, axis=1)-1,1)))                                          
 
 # ---- initial timestep calculation
 dt = dCFL*np.minimum(dx,dz)/np.amax(C);   #limited by speed of sound          
@@ -64,6 +64,7 @@ Q[:,:,3] =(P_pert+P0*X**0)/(gamma-1)+0.5*rho0*wind**2; # E for ideal gas
 # Set domain indices for evaluations (leave out 1st and last gridcenter)
 iD = np.arange(2,I)-1;   # x indices
 jD = np.arange(2,J)-1;   # z indices
+[JD,ID] = np.meshgrid(jD,iD)
 
 # Store initial state
 Q_save[:,:,:,nframe] = Q;   #currently nframe is 0
@@ -216,8 +217,8 @@ def MolecularViscosity(kinvisc,difCFL,dt,dx,dz,jD,iD,Q,t,IsDiffusionImplicit,A_v
             Q[:,:,3] = Q[:,:,3]-0.5*(Q[:,:,1]**2+Q[:,:,2]**2)/Q[:,:,0]; # compute P/(gamma-1) 
             Q[:,:,1:3] = Q[:,:,1:3]/Q[:,:,0];  # compute velocity
             # Using an explicit scheme: forward Euler in time and centrered difference in space
-            Q[jD,iD,1:3] = Q[jD,iD,0]*(Q[jD,iD,1:3]+kinvisc(jD,iD)*(dt_sub/dx**2)*(Q[jD,iD+1,1:3]-2*Q[jD,iD,1:3]+Q[jD,iD-1,1:3])); # get updated rho*u and rho*w.
-            Q[jD,iD,3] = Q[jD,iD,3]+0.5*(Q[jD,iD,1]**2+Q[jD,iD,2]**2)/Q[jD,iD,0]; # get updated E
+            Q[JD,ID,1:3] = Q[JD,ID,0]*(Q[JD,ID,1:3]+kinvisc[JD,ID]*(dt_sub/dx**2)*(Q[JD,ID+1,1:3]-2*Q[JD,ID,1:3]+Q[JD,ID-1,1:3])); # get updated rho*u and rho*w.
+            Q[JD,ID,3] = Q[JD,ID,3]+0.5*(Q[JD,ID,1]**2+Q[JD,ID,2]**2)/Q[JD,ID,0]; # get updated E
             # apply BCs
             Q = bc(Q,t);
 
@@ -225,8 +226,8 @@ def MolecularViscosity(kinvisc,difCFL,dt,dx,dz,jD,iD,Q,t,IsDiffusionImplicit,A_v
             Q[:,:,3] = Q[:,:,3]-0.5*(Q[:,:,1]**2+Q[:,:,2]**2)/Q[:,:,0];
             Q[:,:,1:3]=Q[:,:,1:3]/Q[:,:,0];
             # Explicit method
-            Q[jD,iD,1:3] = Q[jD,iD,0]*(Q[jD,iD,1:3]+kinvisc[jD,iD]*(dt_sub/dz**2)*(Q[jD+1,iD,1:3]-2*Q[jD,iD,1:3]+Q[jD-1,iD,1:3]));
-            Q[jD,iD,3] = Q[jD,iD,3]+0.5*(Q[jD,iD,1]**2+Q[jD,iD,2]**2)/Q[jD,iD,0];
+            Q[JD,ID,1:3] = Q[JD,ID,0]*(Q[JD,ID,1:3]+kinvisc[JD,ID]*(dt_sub/dz**2)*(Q[JD+1,ID,1:3]-2*Q[JD,ID,1:3]+Q[JD-1,ID,1:3]));
+            Q[JD,ID,3] = Q[JD,ID,3]+0.5*(Q[JD,ID,1]**2+Q[JD,ID,2]**2)/Q[JD,ID,0];
             # apply BCs
             Q = bc(Q,t);
          
@@ -257,7 +258,7 @@ def ThermalConduction(thermdiffus,difCFL,T_ref,dt,dx,dz,x_c,z_c,jD,iD,Q,t,IsDiff
        
         # form Q
         P = Q[:,:,0]*R*(T_diff + T_ref); # get updated P
-        Q[jD,iD,3] = P[jD,iD]/(gamma[jD,iD]-1) + 0.5*(Q[jD,iD,1]**2+Q[jD,iD,2]**2)/Q[jD,iD,0]; # get updated E
+        Q[JD,ID,3] = P[JD,ID]/(gamma[JD,ID]-1) + 0.5*(Q[JD,ID,1]**2+Q[JD,ID,2]**2)/Q[JD,ID,0]; # get updated E
         
         # apply BCs to new Q
         Q = bc(Q,t);
@@ -279,10 +280,10 @@ def ThermalConduction(thermdiffus,difCFL,T_ref,dt,dx,dz,x_c,z_c,jD,iD,Q,t,IsDiff
             T = (Q[:,:,3]*(gamma-1))/(R*Q[:,:,0]);  # compute T
             T_diff = T - T_ref; # diffusion will be applied only to deviation from reference state
             # Using an explicit scheme: forward Euler in time and centrered difference in space
-            T_diff[jD,iD] = T_diff[jD,iD] + thermdiffus[jD,iD]*(dt_sub/dx**2)*(T_diff[jD,iD+1]-2*T_diff[jD,iD]+T_diff[jD,iD-1]); # get updated T.
+            T_diff[JD,ID] = T_diff[JD,ID] + thermdiffus[JD,ID]*(dt_sub/dx**2)*(T_diff[JD,ID+1]-2*T_diff[JD,ID]+T_diff[JD,ID-1]); # get updated T.
                        
             P = Q[:,:,0]*R*(T_diff + T_ref); # get updated P
-            Q[jD,iD,3] = P[jD,iD]/(gamma[jD,iD]-1) + 0.5*(Q[jD,iD,1]**2+Q[jD,iD,2]**2)/Q[jD,iD,0]; # get updated E
+            Q[JD,ID,3] = P[JD,ID]/(gamma[JD,ID]-1) + 0.5*(Q[JD,ID,1]**2+Q[JD,ID,2]**2)/Q[JD,ID,0]; # get updated E
 
             # apply BCs
             Q = bc(Q,t);
@@ -292,10 +293,10 @@ def ThermalConduction(thermdiffus,difCFL,T_ref,dt,dx,dz,x_c,z_c,jD,iD,Q,t,IsDiff
             T = (Q[:,:,3]*(gamma-1))/(R*Q[:,:,0]);  # compute T
             T_diff = T - T_ref; # diffusion will be applied only to deviation from reference state
             # Using an explicit scheme: forward Euler in time and centrered difference in space
-            T_diff[jD,iD] = T_diff[jD,iD] + thermdiffus[jD,iD]*(dt_sub/dz**2)*(T_diff[jD+1,iD]-2*T_diff[jD,iD]+T_diff[jD-1,iD]); # get updated T.
+            T_diff[JD,ID] = T_diff[JD,ID] + thermdiffus[JD,ID]*(dt_sub/dz**2)*(T_diff[jD+1,iD]-2*T_diff[JD,ID]+T_diff[JD-1,ID]); # get updated T.
             
             P = Q[:,:,0]*R*(T_diff + T_ref); # get updated P
-            Q[jD,iD,3] = P[jD,iD]/(gamma[jD,iD]-1) + 0.5*(Q[jD,iD,1]**2+Q[jD,iD,2]**2)/Q[jD,iD,0]; # get updated E
+            Q[JD,ID,3] = P[JD,ID]/(gamma[JD,ID]-1) + 0.5*(Q[JD,ID,1]**2+Q[JD,ID,2]**2)/Q[JD,ID,0]; # get updated E
         
    
         # apply BCs
@@ -321,28 +322,28 @@ def SolveImplicitDiffusion(u_old,A,I,J):
 
      ##-----------------------------------------------------------------------------------------------##
 ## Computations (Lax-Wendroff 2-step)
-Qs=np.array(0)
+Qs=np.zeros(np.shape(Q))
 while t < Tmax and nframe <= 166:       #last index of T_arr is 166
     
     # ---- x-split ---- (no source used in x split since our sources are height dependent)
     F=Fflux(Q); # compute flux F    
     # half-step
-    Qs[jD,iD,:]=0.5*(Q[jD,iD,:]+Q[jD,iD+1,:])-(dt/(2*dx))*(F[jD,iD+1,:]-F[jD,iD,:]);
+    Qs[JD,ID,:]=0.5*(Q[JD,ID,:]+Q[JD,ID+1,:])-(dt/(2*dx))*(F[JD,ID+1,:]-F[JD,ID,:]);
     F=Fflux(Qs); # update flux
     # full-step in x
-    Q[jD,iD,:]=Q[jD,iD,:]-(dt/dx)*(F[jD,iD,:]-F[jD,iD-1,:]);
+    Q[JD,ID,:]=Q[JD,ID,:]-(dt/dx)*(F[JD,ID,:]-F[JD,ID-1,:]);
     # apply BCs
     Q=bc(Q,t);
     
     # z-split
     G=Gflux(Q); # compute flux G
-    S=Source(0.5*(Q[jD,iD,:]+Q[jD+1,iD,:]),g[jD,iD],X,Z,t); # compute source
+    S=Source(0.5*(Q[JD,ID,:]+Q[JD+1,ID,:]),g[JD,ID],X,Z,t); # compute source
     # half step in z
-    Qs[jD,iD,:]=0.5*(Q[jD,iD,:]+Q[jD+1,iD,:])-(dt/(2*dz))*(G[jD+1,iD,:]-G[jD,iD,:])+(dt/2)*S[:,:,:];
+    Qs[JD,ID,:]=0.5*(Q[JD,ID,:]+Q[JD+1,ID,:])-(dt/(2*dz))*(G[JD+1,ID,:]-G[JD,ID,:])+(dt/2)*S[:,:,:];
     G=Gflux(Qs);    # update flux
     S=Source(Qs,g,X,Z,t); # update source
     # full step in z
-    Q[jD,iD,:]=Q[jD,iD,:]-(dt/dz)*(G[jD,iD,:]-G[jD-1,iD,:])+dt*0.5*(S[jD,iD,:]+S[jD-1,iD,:]);
+    Q[JD,ID,:]=Q[JD,ID,:]-(dt/dz)*(G[JD,ID,:]-G[JD-1,ID,:])+dt*0.5*(S[JD,ID,:]+S[JD-1,ID,:]);
     # apply BCs
     Q=bc(Q,t);
     
