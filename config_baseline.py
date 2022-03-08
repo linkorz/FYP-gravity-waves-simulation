@@ -78,26 +78,25 @@ wind = u_max*np.exp(-(Z-u_zloc)**2/(2*u_sig**2));    # wind profile, also a matr
 
 ## ---- Wave forcing ----
 # A lower boundary Source is simulated as Gaussian w perturbation
-global forcing
-class forcing:
-    def __init__(self):
-        forcing.thermal = False;     #if thermal forcing is applied
-        forcing.verticalvelocity = True;    
 
-        if forcing.thermal == True:         #forcing_thermal=True?
-            forcing.amp = 100;      # amplitude (K/s), typically of form: A x Cp
-            forcing.x0 = 0;  #  forcing center x location (m)
-            forcing.sigmax = 500;     # forcing half width x (m)
-            forcing.z0 = 20000; #  forcing center z location (m)
-            forcing.sigmaz = 1000;     # forcing half width z (m)
-            forcing.t0 = 1200;      # time at forcing maxima (s)
-            forcing.sigmat = 600;     # forcing half width time (s)
+class forcing:
+        thermal = False;     #if thermal forcing is applied
+        verticalvelocity = True;    
+
+        if thermal == True:         #forcing_thermal=True?
+            amp = 100;      # amplitude (K/s), typically of form: A x Cp
+            x0 = 0;  #  forcing center x location (m)
+            sigmax = 500;     # forcing half width x (m)
+            z0 = 20000; #  forcing center z location (m)
+            sigmaz = 1000;     # forcing half width z (m)
+            t0 = 1200;      # time at forcing maxima (s)
+            sigmat = 600;     # forcing half width time (s)
         else:
             # parameters for vertical velocity type forcing
-            forcing.amp = 0.001;      # amplitude (m/s)
-            forcing.omega = 0.007;  # centered frequency
+            amp = 0.001;      # amplitude (m/s)
+            omega = 0.007;  # centered frequency
             kx = 2*math.pi / (Xmax-Xmin);    # One horizontal wavelength per domain is set (lambda_x = x domain length)
-            forcing.kxx = x_c*kx;  # computing kx*x
-            forcing.t0 = 1200;      # time at forcing maxima (s)
-            forcing.sigmat=600;     # forcing half width time (s)
+            kxx = x_c*kx;  # computing kx*x
+            t0 = 1200;      # time at forcing maxima (s)
+            sigmat=600;     # forcing half width time (s)
 
