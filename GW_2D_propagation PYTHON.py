@@ -64,7 +64,7 @@ Q[:,:,3] =(P_pert+P0*X**0)/(gamma-1)+0.5*rho0*wind**2; # E for ideal gas
 # Set domain indices for evaluations (leave out 1st and last gridcenter)
 iD = np.arange(2,I)-1;   # x indices
 jD = np.arange(2,J)-1;   # z indices
-[JD,ID] = np.meshgrid(jD,iD)
+[ID,JD] = np.meshgrid(iD,jD)
 
 # Store initial state
 Q_save[:,:,:,nframe] = Q;   #currently nframe is 0
@@ -158,6 +158,7 @@ def Gflux(Q):
 #function S = Source[Q,g,X,Z,t]
 def Source(Q,g,X,Z,t):
     global forcing
+    S=np.zeros(Q.shape)
     S[:,:,0] = 0*Q[:,:,0];
     S[:,:,1] = 0*Q[:,:,0];
     S[:,:,2] = -Q[:,:,0]*g;
