@@ -11,7 +11,7 @@ from VarCoeffImplicitCNMatrix import VarCoeffImplicitCNMatrix
 # note on indexing: X(row,col) --> X(z_ind, x_ind)
 
 # managing z axis indices
-LastDomainZindex = np.nonzero(np.logical_and(z_c > ZDomainEnd,z_c < ZDomainEnd+dz)) - np.array([1]);         # last Z index for the 'physically valid' domain
+LastDomainZindex = np.nonzero(np.logical_and(z_c > ZDomainEnd,z_c < ZDomainEnd+dz));         # last Z index for the 'physically valid' domain
 FirstSpongeZindex = LastDomainZindex + np.array([1]);
 if IsTopSpongeLayer == 0:  # if no sponge layer is implemented, just take last 2 indices out for top BCs
     LastDomainZindex = LastDomainZindex - np.array([2]);
@@ -130,7 +130,7 @@ def Fflux(Q):
     
     # compute pressure from ideal gas equation
     P = (gamm-1)*(Q[:,:,3]-(0.5*(Q[:,:,1]**2+Q[:,:,2]*2)/Q[:,:,0]));
-    
+    F=np.zeros(np.shape(Q))
     F[:,:,0] = Q[:,:,1];
     F[:,:,1] = Q[:,:,1]*Q[:,:,1]/Q[:,:,0] + P;
     F[:,:,2] = Q[:,:,1]*Q[:,:,2]/Q[:,:,0];
@@ -147,7 +147,7 @@ def Gflux(Q):
     gamm = gamma[0:a,0:b]; # gamm is just gamma of the correct size
     
     P = (gamm-1)*(Q[:,:,3]-(0.5*(Q[:,:,1]**2+Q[:,:,2]**2)/Q[:,:,0]));
-    
+    G=np.zeros(Q.shape)
     G[:,:,0] = Q[:,:,2];
     G[:,:,1] = Q[:,:,1]*Q[:,:,2]/Q[:,:,0];
     G[:,:,2] = Q[:,:,2]*Q[:,:,2]/Q[:,:,0]+P;
@@ -321,18 +321,20 @@ def SolveImplicitDiffusion(u_old,A,I,J):
 
      return u_new
 
-     ##-----------------------------------------------------------------------------------------------##
+##-----------------------------------------------------------------------------------------------##
 ## Computations (Lax-Wendroff 2-step)
-Qs=np.zeros(np.shape(Q))
+[Qdim1,Qdim2,Qdim3]= np.shape(Q)
+Qs=np.zeros((Qdim1-1,Qdim2-1,Qdim3))
+
 while t < Tmax and nframe <= 166:       #last index of T_arr is 166
     
     # ---- x-split ---- (no source used in x split since our sources are height dependent)
     F=Fflux(Q); # compute flux F    
     # half-step
     Qs[JD,ID,:]=0.5*(Q[JD,ID,:]+Q[JD,ID+1,:])-(dt/(2*dx))*(F[JD,ID+1,:]-F[JD,ID,:]);
-    F=Fflux(Qs); # update flux
+    Fs=Fflux(Qs); # update flux
     # full-step in x
-    Q[JD,ID,:]=Q[JD,ID,:]-(dt/dx)*(F[JD,ID,:]-F[JD,ID-1,:]);
+    Q[JD,ID,:]=Q[JD,ID,:]-(dt/dx)*(Fs[JD,ID,:]-Fs[JD,ID-1,:]);
     # apply BCs
     Q=bc(Q,t);
     
@@ -341,10 +343,10 @@ while t < Tmax and nframe <= 166:       #last index of T_arr is 166
     S=Source(0.5*(Q[JD,ID,:]+Q[JD+1,ID,:]),g[JD,ID],X,Z,t); # compute source
     # half step in z
     Qs[JD,ID,:]=0.5*(Q[JD,ID,:]+Q[JD+1,ID,:])-(dt/(2*dz))*(G[JD+1,ID,:]-G[JD,ID,:])+(dt/2)*S[:,:,:];
-    G=Gflux(Qs);    # update flux
+    Gs=Gflux(Qs);    # update flux
     S=Source(Qs,g,X,Z,t); # update source
     # full step in z
-    Q[JD,ID,:]=Q[JD,ID,:]-(dt/dz)*(G[JD,ID,:]-G[JD-1,ID,:])+dt*0.5*(S[JD,ID,:]+S[JD-1,ID,:]);
+    Q[JD,ID,:]=Q[JD,ID,:]-(dt/dz)*(Gs[JD,ID,:]-Gs[JD-1,ID,:])+dt*0.5*(S[JD,ID,:]+S[JD-1,ID,:]);
     # apply BCs
     Q=bc(Q,t);
     
@@ -368,8 +370,8 @@ while t < Tmax and nframe <= 166:       #last index of T_arr is 166
     t=t+dt;
     n=n+1;
     
-    # Update advective (main loop) timestep (adaptive)  stopped here
-    dt = dCFL*min(dx,dz)/(max(max(C))+max(max(max(abs(Q[:,:,1:3]/Q[:,:,0]))))); # when Q(:,:,1) -> 0, dt becomes 0 & program breaks.
+    # Update advective (main loop) timestep (adaptive)  
+    dt = dCFL*np.minimum(dx,dz)/(np.amax(C)+np.amax((abs(Q[:,:,1:3]/np.dstack([Q[:,:,0]]))))); # when Q(:,:,1) -> 0, dt becomes 0 & program breaks.
     #This happens with ideal exponential density (hence, limit them to ~300
     #km). Should not be an issue with realistic density.
     if ((np.isnan(dt)) or (dt==0)):
@@ -390,20 +392,20 @@ while t < Tmax and nframe <= 166:       #last index of T_arr is 166
 # all outputs are only taken from indices (3:-2) in X and (3:LastDomainZindex) in Z since that is the
 # computational domain, after excluding 2 ghost cells on either sides and sponge layer, if implemented.
 
-# These values are 3D arrays (z-x-t)        still figuring out how to translate "end" in multidimensional array indexing
-KE = np.squeeze(0.5*(Q_save[2:LastDomainZindex,2:-2,1,:]**2+Q_save[2:LastDomainZindex,2:-2,2,:]**2)/Q_save[2:LastDomainZindex,2:-2,0,:]);
-P_PERT = (np.squeeze(Q_save[2:LastDomainZindex,2:-2,3,:])-KE)*(gamma[2:LastDomainZindex,2:-2]-1)-P0[2:LastDomainZindex,2:-2];
-T_PERT = P_PERT/(R[2:LastDomainZindex,2:-2]*np.squeeze(Q_save[2:LastDomainZindex,2:-2,0,:]));
-U = np.squeeze(Q_save[2:LastDomainZindex,2:-2,1,:]/Q_save[2:LastDomainZindex,2:-2,0,:]);    #horiz. wind (not perturbation)
-W = np.squeeze(Q_save[2:LastDomainZindex,2:-2,2,:]/Q_save[2:LastDomainZindex,2:-2,0,:]);    # vertical wind (not perturbation) stopped here
+# These values are 3D arrays (z-x-t)        
+KE = np.squeeze(0.5*(Q_save[2:LastDomainZindex.item(0),2:-2,1,:]**2+Q_save[2:LastDomainZindex.item(0),2:-2,2,:]**2)/Q_save[2:LastDomainZindex.item(0),2:-2,0,:]);
+P_PERT = (np.squeeze(Q_save[2:LastDomainZindex.item(0),2:-2,3,:])-KE)*np.dstack([gamma[2:LastDomainZindex.item(0),2:-2]-1])-np.dstack([P0[2:LastDomainZindex.item(0),2:-2]]);
+T_PERT = P_PERT/(np.dstack([R[2:LastDomainZindex.item(0),2:-2]])*np.squeeze(Q_save[2:LastDomainZindex.item(0),2:-2,0,:]));
+U = np.squeeze(Q_save[2:LastDomainZindex.item(0),2:-2,1,:]/Q_save[2:LastDomainZindex.item(0),2:-2,0,:]);    #horiz. wind (not perturbation)
+W = np.squeeze(Q_save[2:LastDomainZindex.item(0),2:-2,2,:]/Q_save[2:LastDomainZindex.item(0),2:-2,0,:]);    # vertical wind (not perturbation) 
 
-SCALING_FACTOR = np.sqrt(rho0[3:LastDomainZindex,3:-2]/rho0[3,3:-2]); # an 2d Z-X matrix
-Z_KM = z_c[2:LastDomainZindex]/1000; # grid center arrays for plotting the computational domain
+SCALING_FACTOR = np.sqrt(rho0[2:LastDomainZindex.item(0),2:-2]/rho0[2,2:-2]); # an 2d Z-X matrix
+Z_KM = z_c[2:LastDomainZindex.item(0)]/1000; # grid center arrays for plotting the computational domain
 X_KM = x_c[2:-2]/1000;
 
 ## Optional plots
 plt.figure # wave travel plot for x in the middle of domain
-plt.contourf(T_arr,Z_KM,np.squeeze(W[:,np.size(X_KM)/2-1,:])*SCALING_FACTOR[:,np.size(X_KM/2)-1],50,'Edgecolor','none')
+plt.contourf(T_arr,Z_KM,W[:,np.size(X_KM)//2-1,:]*np.column_stack([SCALING_FACTOR[:,np.size(X_KM/2)-1]]))
 plt.xlabel('time (s)')
 plt.ylabel('z (km)')
 
