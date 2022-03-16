@@ -59,6 +59,7 @@ from Earth_iso import Earth_isothermal
 (T0,rho0,P0,R,gamma,kinvisc,thermdiffus,H,C) = Earth_isothermal(Z);
  
 # If using Earth MSIS model
+#from EarthMSIS import Earth_MSIS
 #[T0,rho0,P0,R,gamma,kinvisc,thermdiffus,H,C,_,_] = Earth_MSIS(Z,10,180,2020,1,0);
 
 ## ---- Background wind ----
