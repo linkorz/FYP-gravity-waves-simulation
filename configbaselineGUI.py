@@ -2,12 +2,13 @@ from tkinter import *
 
 root = Tk()
 
+#model select------------------#
 clicked = StringVar()
-clicked.set("Earth_iso")
+clicked.set("Earth_Isothermal")
 
 model = OptionMenu(root, clicked, "Earth_Isothermal", "Earth_MSIS")
 model.grid(row=24,column=1)
-
+#------------------------------#
 #Use input values for T
 T1label = Label(root, text="Tmin")
 T1label.grid(row=0,column=0)
@@ -60,9 +61,9 @@ def saveT():
     Tmaxval= T2ent.get()
     skipTval= TSent.get()
     global Tmin, Tmax, skipT
-    Tmin= int(Tminval)
-    Tmax= int(Tmaxval)
-    skipT= int(skipTval)
+    Tmin= int(Tminval)  #Initial time
+    Tmax= int(Tmaxval)  #Final time in seconds
+    skipT= int(skipTval)    #Number of seconds to skip string results
     print(Tmin,Tmax,skipT)
 
 def saveX():
