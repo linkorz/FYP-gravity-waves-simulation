@@ -66,7 +66,7 @@ from Earth_iso import Earth_isothermal
 # only horizontal wind is specified -> time invariant. Vertical wind is zero.
 # will need recheck equations to subtract from rho*u and rho*w if this changes 
 
-global wind
+
 # Gaussian wind shear
 u_max = 0;    # wind amplitude (m/s) 
 u_zloc = 100000;    # z location of wind peak (m)
