@@ -129,6 +129,7 @@ def Fflux(Q):
     gamm = gamma[0:a,0:b]; # gamm is just gamma of the correct size
     
     # compute pressure from ideal gas equation
+    P=np.zeros(Q.shape)
     P = (gamm-1)*(Q[:,:,3]-(0.5*(Q[:,:,1]**2+Q[:,:,2]*2)/Q[:,:,0]));
     F=np.zeros(np.shape(Q))
     F[:,:,0] = Q[:,:,1];
@@ -315,7 +316,7 @@ def SolveImplicitDiffusion(u_old,A,I,J):
 # A -> coefficient matrix (see VarCoeffImplicitCNMatrix.m or ConstCoeffImplicitCNMatrix.m)
 # I -> no. of x values
 # J -> no. of z values
-     b = np.reshape(np.transpose(u_old[:,:],),(-1,1)); #RHS of the matrix equation
+     b = np.reshape(np.transpose(u_old[:,:]),(-1,1)); #RHS of the matrix equation
      u_new = np.linalg.solve(A,b); # Direct method using LU factorization,matrix division. np.linalg
      u_new = np.transpose(np.reshape(u_new,(I,J))); # reshape the solution as matrix
 
@@ -326,7 +327,7 @@ def SolveImplicitDiffusion(u_old,A,I,J):
 [Qdim1,Qdim2,Qdim3]= np.shape(Q)
 Qs=np.zeros((Qdim1-1,Qdim2-1,Qdim3))
 
-while t < Tmax and nframe <= 166:       #last index of T_arr is 166
+while t < Tmax and nframe <= 126:       #last index of T_arr is 166
     
     # ---- x-split ---- (no source used in x split since our sources are height dependent)
     F=Fflux(Q); # compute flux F    
@@ -379,10 +380,11 @@ while t < Tmax and nframe <= 166:       #last index of T_arr is 166
     
     
     # Store results     
-    if abs(t-T_arr[nframe])<=1:
-        Q_save[:,:,:,nframe]=Q
+    if (round(t)%skipT==0) and (T_arr[nframe]!=round(t)):
         nframe=nframe+1
-        print(['dt=',str(dt),'(s); Time Step n=',str(n),'; Time t=',str(t),'(s)']);
+        Q_save[:,:,:,nframe]=Q
+        T_arr[nframe]=t
+        print(dt,n,t);
     
     
 
