@@ -173,7 +173,7 @@ def Source(Q,g,X,Z,t):
 ## ---- Viscous terms ----
 
 #function[Q] = MolecularViscosity[kinvisc,difCFL,dt,dx,dz,jD,iD,Q,t,IsDiffusionImplicit,A_visc,I,J]
-def MolecularViscosity(kinvisc,difCFL,dt,dx,dz,jD,iD,Q,t,IsDiffusionImplicit,A_visc,I,J):
+def MolecularViscosity(kinvisc,difCFL,dt,dx,dz,JD,ID,Q,t,IsDiffusionImplicit,A_visc,I,J):
     global wind
     # This function solves the diffusion equation for molecular viscosity
     # inputs: kinvic -> array of kinematic viscosity values
@@ -237,7 +237,7 @@ def MolecularViscosity(kinvisc,difCFL,dt,dx,dz,jD,iD,Q,t,IsDiffusionImplicit,A_v
 
 
 #function[Q] = ThermalConduction[thermdiffus,difCFL,T_ref,dt,dx,dz,x_c,z_c,jD,iD,Q,t,IsDiffusionImplicit,A_therm,I,J]
-def ThermalConduction(thermdiffus,difCFL,T_ref,dt,dx,dz,x_c,z_c,jD,iD,Q,t,IsDiffusionImplicit,A_therm,I,J):
+def ThermalConduction(thermdiffus,difCFL,T_ref,dt,dx,dz,x_c,z_c,JD,ID,Q,t,IsDiffusionImplicit,A_therm,I,J):
     global R, gamma, P0
     # This function solves the diffusion equation for thermal conduction
     # inputs: thermdiffus -> array of thermal diffusivity values
@@ -295,7 +295,7 @@ def ThermalConduction(thermdiffus,difCFL,T_ref,dt,dx,dz,x_c,z_c,jD,iD,Q,t,IsDiff
             T = (Q[:,:,3]*(gamma-1))/(R*Q[:,:,0]);  # compute T
             T_diff = T - T_ref; # diffusion will be applied only to deviation from reference state
             # Using an explicit scheme: forward Euler in time and centrered difference in space
-            T_diff[JD,ID] = T_diff[JD,ID] + thermdiffus[JD,ID]*(dt_sub/dz**2)*(T_diff[jD+1,iD]-2*T_diff[JD,ID]+T_diff[JD-1,ID]); # get updated T.
+            T_diff[JD,ID] = T_diff[JD,ID] + thermdiffus[JD,ID]*(dt_sub/dz**2)*(T_diff[JD+1,ID]-2*T_diff[JD,ID]+T_diff[JD-1,ID]); # get updated T.
             
             P = Q[:,:,0]*R*(T_diff + T_ref); # get updated P
             Q[JD,ID,3] = P[JD,ID]/(gamma[JD,ID]-1) + 0.5*(Q[JD,ID,1]**2+Q[JD,ID,2]**2)/Q[JD,ID,0]; # get updated E
@@ -327,7 +327,7 @@ def SolveImplicitDiffusion(u_old,A,I,J):
 [Qdim1,Qdim2,Qdim3]= np.shape(Q)
 Qs=np.zeros((Qdim1-1,Qdim2-1,Qdim3))
 
-while t < Tmax and nframe <= 126:       #last index of T_arr is 166
+while t < Tmax:       #last index of T_arr is 166
     
     # ---- x-split ---- (no source used in x split since our sources are height dependent)
     F=Fflux(Q); # compute flux F    
@@ -354,17 +354,17 @@ while t < Tmax and nframe <= 126:       #last index of T_arr is 166
     # Solve for diffusion terms             
     # Molecular Diffusion
     if IsViscosity == 1:
-        Q = MolecularViscosity(kinvisc,difCFL,dt,dx,dz,jD,iD,Q,t,IsDiffusionImplicit,A_visc,I,J);
+        Q = MolecularViscosity(kinvisc,difCFL,dt,dx,dz,JD,ID,Q,t,IsDiffusionImplicit,A_visc,I,J);
     
     
     # Thermal conductivity
     if IsConduction == 1:
-        Q = ThermalConduction(thermdiffus,difCFL,T0,dt,dx,dz,x_c,z_c,jD,iD,Q,t,IsDiffusionImplicit,A_therm,I,J);
+        Q = ThermalConduction(thermdiffus,difCFL,T0,dt,dx,dz,x_c,z_c,JD,ID,Q,t,IsDiffusionImplicit,A_therm,I,J);
     
     
     # Sponge layer implementation
     if IsTopSpongeLayer == 1:
-        Q = MolecularViscosity(kinvisc,difCFL,dt,dx,dz,jD,iD,Q,t,IsDiffusionImplicit,A_visc,I,J);        
+        Q = MolecularViscosity(kinvisc,difCFL,dt,dx,dz,JD,ID,Q,t,IsDiffusionImplicit,A_visc,I,J);        
     
     
     # ---- Update time ----
