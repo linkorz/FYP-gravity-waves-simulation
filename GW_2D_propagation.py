@@ -205,11 +205,11 @@ def MolecularViscosity(kinvisc,difCFL,dt,dx,dz,JD,ID,Q,t,IsDiffusionImplicit,A_v
     else:
         # First calculating the number of sub-steps for integration of diffusion equation 
         max_visc = np.amax(kinvisc);  #max value of viscosity in the domain
-        N_substeps = np.ceil(dt*max_visc/(difCFL*min(dx,dz)**2));   #no of substeps required to solve diffusion equation... 
+        N_substeps = np.ceil(dt*max_visc/(difCFL*np.minimum(dx,dz)**2));   #no of substeps required to solve diffusion equation... 
         #... based on Von Neumann Number (dt = N_substeps x dt_sub)
 
         # Main Substepping Loop
-        for m in np.arange(1,N_substeps):
+        for m in np.arange(1,N_substeps+1):
      
             # Substep Timestep
             dt_sub = dt/N_substeps;
@@ -217,18 +217,18 @@ def MolecularViscosity(kinvisc,difCFL,dt,dx,dz,JD,ID,Q,t,IsDiffusionImplicit,A_v
             # x-split for diffusion equation ----
             # compute intermediate values for ease:
             Q[:,:,3] = Q[:,:,3]-0.5*(Q[:,:,1]**2+Q[:,:,2]**2)/Q[:,:,0]; # compute P/(gamma-1) 
-            Q[:,:,1:3] = Q[:,:,1:3]/Q[:,:,0];  # compute velocity
+            Q[:,:,1:3] = Q[:,:,1:3]/np.dstack([Q[:,:,0]]);  # compute velocity
             # Using an explicit scheme: forward Euler in time and centrered difference in space
-            Q[JD,ID,1:3] = Q[JD,ID,0]*(Q[JD,ID,1:3]+kinvisc[JD,ID]*(dt_sub/dx**2)*(Q[JD,ID+1,1:3]-2*Q[JD,ID,1:3]+Q[JD,ID-1,1:3])); # get updated rho*u and rho*w.
+            Q[JD,ID,1:3] = np.dstack([Q[JD,ID,0]])*(Q[JD,ID,1:3]+np.dstack([kinvisc[JD,ID]])*(dt_sub/dx**2)*(Q[JD,ID+1,1:3]-2*Q[JD,ID,1:3]+Q[JD,ID-1,1:3])); # get updated rho*u and rho*w.
             Q[JD,ID,3] = Q[JD,ID,3]+0.5*(Q[JD,ID,1]**2+Q[JD,ID,2]**2)/Q[JD,ID,0]; # get updated E
             # apply BCs
             Q = bc(Q,t);
 
             # z-split for diffusion equation ----
             Q[:,:,3] = Q[:,:,3]-0.5*(Q[:,:,1]**2+Q[:,:,2]**2)/Q[:,:,0];
-            Q[:,:,1:3]=Q[:,:,1:3]/Q[:,:,0];
+            Q[:,:,1:3]=Q[:,:,1:3]/np.dstack([Q[:,:,0]]);
             # Explicit method
-            Q[JD,ID,1:3] = Q[JD,ID,0]*(Q[JD,ID,1:3]+kinvisc[JD,ID]*(dt_sub/dz**2)*(Q[JD+1,ID,1:3]-2*Q[JD,ID,1:3]+Q[JD-1,ID,1:3]));
+            Q[JD,ID,1:3] = np.dstack([Q[JD,ID,0]])*(Q[JD,ID,1:3]+np.dstack([kinvisc[JD,ID]])*(dt_sub/dz**2)*(Q[JD+1,ID,1:3]-2*Q[JD,ID,1:3]+Q[JD-1,ID,1:3]));
             Q[JD,ID,3] = Q[JD,ID,3]+0.5*(Q[JD,ID,1]**2+Q[JD,ID,2]**2)/Q[JD,ID,0];
             # apply BCs
             Q = bc(Q,t);
@@ -271,7 +271,7 @@ def ThermalConduction(thermdiffus,difCFL,T_ref,dt,dx,dz,x_c,z_c,JD,ID,Q,t,IsDiff
         #... based on Von Neumann Number (dt = N_substeps x dt_sub)
 
     # Main Substepping Loop
-        for m in np.arange(1,N_substeps):
+        for m in np.arange(1,N_substeps+1):
         
         # Substep Timestep
             dt_sub = dt/N_substeps;
@@ -328,7 +328,7 @@ def SolveImplicitDiffusion(u_old,A,I,J):
 Qs=np.zeros((Qdim1-1,Qdim2-1,Qdim3))
 
 while t < Tmax:       #last index of T_arr is 166
-    
+        
     # ---- x-split ---- (no source used in x split since our sources are height dependent)
     F=Fflux(Q); # compute flux F    
     # half-step
@@ -384,9 +384,9 @@ while t < Tmax:       #last index of T_arr is 166
         nframe=nframe+1
         Q_save[:,:,:,nframe]=Q
         T_arr[nframe]=t
-        print(dt,n,t);
-    
-    
+        print("dt=",dt,"(s); Time Step n=",n,"; Time t=",t);
+
+    print(dt)    
 
 
 ## Outputs (sim outputs are in all caps)
@@ -416,5 +416,3 @@ plt.ylabel('z (km)')
 # figure
 # plot(Ri,Z_KM,'LineWidth',2)
 # xlim([-1 1])
-
-

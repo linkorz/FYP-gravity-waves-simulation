@@ -10,7 +10,7 @@ skipT = 30;  # Number of seconds to skip storing results
 n = 0;       # First Step n = 0 (n counts the current stored frame)
 t = Tmin;    # First time t = Tmin
 nframe = 0;  # First frame = 0 (nframe is the total no of stored frames)
-T_arr = np.arange(0,5001,30)    #T_arr(nframe) = 0, this translation may be incorrect; # T_arr is the time array of stored frames
+T_arr = np.arange(0,5001,30)    #T_arr(nframe) = 0, # T_arr is the time array of stored frames
 #arange
 ## ---- Viscous phenomenon flags ----
 IsTopSpongeLayer = 0; # flag to include a sponge layer on top (20 km gives good results)
