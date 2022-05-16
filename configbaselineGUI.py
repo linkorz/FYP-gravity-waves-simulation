@@ -4,7 +4,7 @@ from PIL import ImageTk,Image
 
 
 root = Tk()
-root.title("MAGNUS-P Master")
+root.title("MAGNUS-P")
 
 planetimage = ImageTk.PhotoImage(Image.open("Planets.JFIF"))
 planetimagelabel = Label(image=planetimage)
@@ -30,19 +30,19 @@ TimeSettingsLabel = Label(root, text="Time Settings")
 TimeSettingsLabel.grid(row=1,column=1)
 TimeSettingsLabel.configure(font=("Arial",20))
 
-T1label = Label(root, text="Tmin")
+T1label = Label(root, text="Tmin")      #Tmin
 T1label.grid(row=2,column=0)
 T1ent = Entry(root)
 T1ent.insert(0,"0")
 T1ent.grid(row=2,column=1)
 
-T2label = Label(root, text="Tmax")
+T2label = Label(root, text="Tmax")      #Tmax
 T2label.grid(row=3,column=0)
 T2ent = Entry(root)
 T2ent.insert(0,"5000")
 T2ent.grid(row=3,column=1)
 
-TSlabel = Label(root, text="skipT")
+TSlabel = Label(root, text="skipT")     #skipT
 TSlabel.grid(row=4,column=0)
 TSent = Entry(root)
 TSent.insert(0,"30")

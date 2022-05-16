@@ -407,7 +407,7 @@ X_KM = x_c[2:-2]/1000;
 
 ## Optional plots
 plt.figure # wave travel plot for x in the middle of domain
-plt.contourf(T_arr,Z_KM,W[:,np.size(X_KM)//2-1,:]*np.column_stack([SCALING_FACTOR[:,np.size(X_KM/2)-1]]))
+plt.contourf(T_arr,Z_KM,W[:,np.size(X_KM)/2-1,:]*np.column_stack([SCALING_FACTOR[:,np.size(X_KM/2)-1]]))
 plt.xlabel('time (s)')
 plt.ylabel('z (km)')
 
